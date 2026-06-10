@@ -1,0 +1,8 @@
+{
+  "uuid": "AutoColor-top-Bar@baitsart.github.com",
+  "name": "Auto Color Top Bar",
+  "description": "Automatically adapts the top panel color or lets you choose one manually.",
+  "shell-version": ["50"],
+  "settings-schema": "org.gnome.shell.extensions.AutoColorTopBar",
+  "url": "https://github.com/baitsart/AutoColor-top-Bar"
+}

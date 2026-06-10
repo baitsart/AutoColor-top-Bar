@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+
+  <schema id="org.gnome.shell.extensions.AutoColorTopBar"
+          path="/org/gnome/shell/extensions/autocolortopbar/">
+
+    <key name="auto-color" type="b">
+      <default>true</default>
+      <summary>Auto color enabled</summary>
+    </key>
+
+    <key name="color" type="s">
+      <default>'#ff0000'</default>
+      <summary>Manual color</summary>
+    </key>
+
+  </schema>
+
+</schemalist>
