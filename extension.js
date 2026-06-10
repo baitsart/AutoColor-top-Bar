@@ -20,6 +20,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import St from 'gi://St';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
+import GdkPixbuf from 'gi://GdkPixbuf';
 
 export default class AutoColorTopBarExtension extends Extension {
 
@@ -32,6 +33,8 @@ enable() {
     // aplicar color inicial desde settings
     this._applyColor();
 
+
+
     // escuchar cambios en tiempo real (prefs.js)
     this._settings.connect('changed::color', () => {
         this._applyColor();
@@ -40,11 +43,77 @@ enable() {
     this._settings.connect('changed::auto-color', () => {
         this._applyColor();
     });
+
+
+    this._backgroundSettings = new Gio.Settings({
+        schema_id: 'org.gnome.desktop.background'
+    });
+    
+    this._backgroundSettings.connect('changed', () => {
+    
+        if (this._settings.get_boolean('auto-color'))
+            this._applyColor();
+    
+    });
+    
 }
+
     disable() {
 
         Main.panel.set_style("");
+
     }
+        
+        _getAutoColor() {
+        
+           const backgroundSettings = new Gio.Settings({
+               schema_id: 'org.gnome.desktop.background'
+           });
+           
+           const interfaceSettings = new Gio.Settings({
+               schema_id: 'org.gnome.desktop.interface'
+           });
+           
+           const mode = interfaceSettings.get_string('color-scheme');
+           
+           const key = mode.includes('prefer-dark')
+               ? 'picture-uri-dark'
+               : 'picture-uri';
+           
+           const uri = backgroundSettings.get_string(key);
+           
+           log(`AUTOCOLOR URI=${uri}`);
+        
+            const file = Gio.File.new_for_uri(uri);
+            
+            log(`AUTOCOLOR PATH=${file.get_path()}`);
+        
+            const pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                file.get_path(),
+                1,
+                1,
+                true
+            );
+        
+            const pixels = pixbuf.get_pixels();
+        
+            const r = pixels[0];
+            const g = pixels[1];
+            const b = pixels[2];
+            
+            log(`AUTOCOLOR RGB=${r},${g},${b}`);
+
+            const hex =
+                `#${r.toString(16).padStart(2, '0')}` +
+                `${g.toString(16).padStart(2, '0')}` +
+                `${b.toString(16).padStart(2, '0')}`;
+            
+            log(`AUTOCOLOR HEX=${hex}`);
+            
+            return hex;
+        
+        }
+        
 
 _applyColor() {
 
@@ -54,21 +123,13 @@ _applyColor() {
 
     if (auto) {
     
-        // Modo Auto: leer el color desde el archivo de Clementine
         try {
     
-            const path = GLib.build_filenamev([
-                GLib.get_home_dir(),
-                '.config',
-                'Clementine',
-                'color_background'
-            ]);
-    
-            const [, contents] = GLib.file_get_contents(path);
-    
-            color = new TextDecoder().decode(contents).trim();
+            color = this._getAutoColor();
     
         } catch (e) {
+    
+            log(`AUTOCOLOR ERROR=${e}`);
     
             color = '#000000';
         }
@@ -91,7 +152,8 @@ _applyColor() {
     const b = parseInt(color.slice(5, 7), 16);
 
     Main.panel.set_style(
-        `background-color: rgba(${r}, ${g}, ${b}, 0.60);`
+            `background-color: rgb(${r}, ${g}, ${b});`
+
     );
 }
 }
