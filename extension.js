@@ -28,7 +28,7 @@ enable() {
 
     this._settings = this.getSettings();
 
-    log("AUTOCOLOR ENABLE");
+    console.debug("AUTOCOLOR ENABLE");
 
     // aplicar color inicial desde settings
     this._applyColor();
@@ -36,40 +36,52 @@ enable() {
 
 
     // escuchar cambios en tiempo real (prefs.js)
-    this._settings.connect('changed::color', () => {
-        this._applyColor();
-    });
-    
-    this._settings.connect('changed::auto-color', () => {
-        this._applyColor();
-    });
-
-
     this._backgroundSettings = new Gio.Settings({
         schema_id: 'org.gnome.desktop.background'
     });
     
-    this._backgroundSettings.connect('changed', () => {
+    this._settings.connectObject(
+        'changed::color',
+        () => this._applyColor(),
+        this
+    );
     
-        if (this._settings.get_boolean('auto-color'))
-            this._applyColor();
+    this._settings.connectObject(
+        'changed::auto-color',
+        () => this._applyColor(),
+        this
+    );
     
-    });
+    this._settings.connectObject(
+        'changed::opacity',
+        () => this._applyColor(),
+        this
+    );
+    
+    this._backgroundSettings.connectObject(
+        'changed',
+        () => {
+            if (this._settings.get_boolean('auto-color'))
+                this._applyColor();
+        },
+        this
+    );
     
 }
 
     disable() {
-
+    
+        this._settings?.disconnectObject(this);
+        this._backgroundSettings?.disconnectObject(this);
+    
+        this._settings = null;
+        this._backgroundSettings = null;
+    
         Main.panel.set_style("");
-
     }
         
         _getAutoColor() {
         
-           const backgroundSettings = new Gio.Settings({
-               schema_id: 'org.gnome.desktop.background'
-           });
-           
            const interfaceSettings = new Gio.Settings({
                schema_id: 'org.gnome.desktop.interface'
            });
@@ -80,13 +92,13 @@ enable() {
                ? 'picture-uri-dark'
                : 'picture-uri';
            
-           const uri = backgroundSettings.get_string(key);
+           const uri = this._backgroundSettings.get_string(key);
            
-           log(`AUTOCOLOR URI=${uri}`);
+           console.debug(`AUTOCOLOR URI=${uri}`);
         
             const file = Gio.File.new_for_uri(uri);
             
-            log(`AUTOCOLOR PATH=${file.get_path()}`);
+            console.debug(`AUTOCOLOR PATH=${file.get_path()}`);
         
             const pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
                 file.get_path(),
@@ -101,14 +113,14 @@ enable() {
             const g = pixels[1];
             const b = pixels[2];
             
-            log(`AUTOCOLOR RGB=${r},${g},${b}`);
+            console.debug(`AUTOCOLOR RGB=${r},${g},${b}`);
 
             const hex =
                 `#${r.toString(16).padStart(2, '0')}` +
                 `${g.toString(16).padStart(2, '0')}` +
                 `${b.toString(16).padStart(2, '0')}`;
             
-            log(`AUTOCOLOR HEX=${hex}`);
+            console.debug(`AUTOCOLOR HEX=${hex}`);
             
             return hex;
         
@@ -120,6 +132,8 @@ _applyColor() {
     let auto = this._settings.get_boolean('auto-color');
 
     let color;
+    
+    const opacity = this._settings.get_double('opacity');
 
     if (auto) {
     
@@ -129,7 +143,7 @@ _applyColor() {
     
         } catch (e) {
     
-            log(`AUTOCOLOR ERROR=${e}`);
+            console.debug(`AUTOCOLOR ERROR=${e}`);
     
             color = '#000000';
         }
@@ -145,15 +159,14 @@ _applyColor() {
 
     color = String(color).replace(/['"]/g, '');
     
-    log(`AUTOCOLOR APPLYING ${color}`);
+    console.debug(`AUTOCOLOR APPLYING ${color}`);
 
     const r = parseInt(color.slice(1, 3), 16);
     const g = parseInt(color.slice(3, 5), 16);
     const b = parseInt(color.slice(5, 7), 16);
 
     Main.panel.set_style(
-            `background-color: rgb(${r}, ${g}, ${b});`
-
+        `background-color: rgba(${r}, ${g}, ${b}, ${opacity});`
     );
 }
 }

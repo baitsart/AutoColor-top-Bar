@@ -2,7 +2,7 @@
 <schemalist>
 
   <schema id="org.gnome.shell.extensions.AutoColorTopBar"
-          path="/org/gnome/shell/extensions/autocolortopbar/">
+          path="/org/gnome/shell/extensions/AutoColorTopBar/">
 
     <key name="auto-color" type="b">
       <default>true</default>
@@ -13,6 +13,11 @@
       <default>'#ff0000'</default>
       <summary>Manual color</summary>
     </key>
+    
+    <key name="opacity" type="d">
+      <default>0.60</default>
+      <summary>Panel opacity</summary>
+    </key>    
 
   </schema>
 

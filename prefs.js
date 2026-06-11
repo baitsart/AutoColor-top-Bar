@@ -7,7 +7,7 @@ export default class AutoColorPrefs extends ExtensionPreferences {
 
     fillPreferencesWindow(window) {
 
-        const settings = this.getSettings('org.gnome.shell.extensions.AutoColorTopBar');
+        const settings = this.getSettings();
 
         const page = new Adw.PreferencesPage();
         const group = new Adw.PreferencesGroup({
@@ -16,7 +16,8 @@ export default class AutoColorPrefs extends ExtensionPreferences {
 
         // SWITCH
         const autoSwitch = new Gtk.Switch({
-            active: settings.get_boolean('auto-color')
+            active: settings.get_boolean('auto-color'),
+            valign: Gtk.Align.CENTER,
         });
 
         autoSwitch.connect('notify::active', () => {
@@ -37,8 +38,8 @@ export default class AutoColorPrefs extends ExtensionPreferences {
         const colorDialog = new Gtk.ColorDialog();
         
         const colorButton = new Gtk.ColorDialogButton({
-            dialog: colorDialog,
-            valign: Gtk.Align.CENTER
+        dialog: colorDialog,
+        valign: Gtk.Align.CENTER,
         });
         
         // cargar color guardado
@@ -74,6 +75,32 @@ export default class AutoColorPrefs extends ExtensionPreferences {
         const colorRow = new Adw.ActionRow({
             title: 'Manual Color'
         });
+
+        const opacityAdjustment = new Gtk.Adjustment({
+            lower: 0.1,
+            upper: 1.0,
+            step_increment: 0.05,
+            value: settings.get_double('opacity')
+        });
+        
+        const opacityScale = new Gtk.Scale({
+            adjustment: opacityAdjustment,
+            digits: 2,
+            draw_value: true,
+            valign: Gtk.Align.CENTER,
+            width_request: 250,
+        });
+        
+        opacityScale.connect('value-changed', () => {
+            settings.set_double('opacity', opacityScale.get_value());
+        });
+        
+        const opacityRow = new Adw.ActionRow({
+            title: 'Transparency'
+        });
+        
+        opacityRow.add_suffix(opacityScale);
+        group.add(opacityRow);
         
         colorRow.add_suffix(colorButton);
         group.add(colorRow);

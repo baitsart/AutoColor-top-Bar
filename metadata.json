@@ -4,5 +4,8 @@
   "description": "Automatically adapts the top panel color or lets you choose one manually.",
   "shell-version": ["50"],
   "settings-schema": "org.gnome.shell.extensions.AutoColorTopBar",
-  "url": "https://github.com/baitsart/AutoColor-top-Bar"
+  "url": "https://github.com/baitsart/AutoColor-Top-Bar",
+  "donations": {
+    "github": "baitsart"
+  }
 }
