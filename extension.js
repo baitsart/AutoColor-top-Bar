@@ -68,7 +68,11 @@ export default class AutoColorTopBarExtension extends Extension {
       this,
     );
 
+<<<<<<< HEAD
     this._resumeId = global.display.connect("monitors-changed", () => {
+=======
+    this._resumeId = Main.layoutManager.connect("monitors-changed", () => {
+>>>>>>> 6750c7a (Fix monitor refresh signal for GNOME 50)
       GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
         if (this._settings.get_boolean("auto-color")) this._applyColor();
         return GLib.SOURCE_REMOVE;
@@ -80,7 +84,12 @@ export default class AutoColorTopBarExtension extends Extension {
     this._settings?.disconnectObject(this);
     this._backgroundSettings?.disconnectObject(this);
 
+<<<<<<< HEAD
     if (this._resumeId) global.display.disconnect(this._resumeId);
+=======
+    if (this._resumeId)
+        Main.layoutManager.disconnect(this._resumeId);
+>>>>>>> 6750c7a (Fix monitor refresh signal for GNOME 50)
 
     this._settings = null;
     this._backgroundSettings = null;
