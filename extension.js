@@ -44,48 +44,10 @@ export default class AutoColorTopBarExtension extends Extension {
       schema_id: "org.gnome.desktop.background",
     });
 
-    this._settings.connectObject(
-      "changed::color",
-      () => this._applyColor(),
-      this,
-    );
-
-    this._settings.connectObject(
-      "changed::auto-color",
-      () => this._applyColor(),
-      this,
-    );
-
-    this._settings.connectObject(
-      "changed::opacity",
-      () => this._applyColor(),
-      this,
-    );
-
-    this._backgroundSettings.connectObject(
-      "changed",
-      () => {
-        this._queueIdle(() => {
-          this._applyColor();
-        });
-      },
-      this,
-    );
-
     this._resumeId = Main.layoutManager.connect("monitors-changed", () => {
       this._queueIdle(() => {
         this._applyColor();
       });
-    });
-    // aplicar color inicial desde settings
-    GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-      this._applyColor();
-      return GLib.SOURCE_REMOVE;
-    });
-
-    // escuchar cambios en tiempo real (prefs.js)
-    this._backgroundSettings = new Gio.Settings({
-      schema_id: "org.gnome.desktop.background",
     });
 
     this._settings.connectObject(
@@ -109,7 +71,7 @@ export default class AutoColorTopBarExtension extends Extension {
     this._backgroundSettings.connectObject(
       "changed",
       () => {
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+        this._queueIdle(() => {
           if (this._settings.get_boolean("auto-panel-color"))
             this._applyColor();
 
@@ -118,27 +80,6 @@ export default class AutoColorTopBarExtension extends Extension {
 
           if (this._settings.get_boolean("auto-background-color"))
             this._applyBackgroundColor();
-
-          return GLib.SOURCE_REMOVE;
-        });
-      },
-      this,
-    );
-
-    this._backgroundSettings.connectObject(
-      "changed",
-      () => {
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-          if (this._settings.get_boolean("auto-panel-color"))
-            this._applyColor();
-
-          if (this._settings.get_boolean("auto-dash-color"))
-            this._applyDashColor();
-
-          if (this._settings.get_boolean("auto-background-color"))
-            this._applyBackgroundColor();
-
-          return GLib.SOURCE_REMOVE;
         });
       },
       this,
