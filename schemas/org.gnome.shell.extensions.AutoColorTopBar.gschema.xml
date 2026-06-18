@@ -4,20 +4,51 @@
   <schema id="org.gnome.shell.extensions.AutoColorTopBar"
           path="/org/gnome/shell/extensions/AutoColorTopBar/">
 
-    <key name="auto-color" type="b">
+    <!-- Panel -->
+
+    <key name="auto-panel-color" type="b">
       <default>true</default>
-      <summary>Auto color enabled</summary>
+      <summary>Auto panel color enabled</summary>
     </key>
 
-    <key name="color" type="s">
+    <key name="panel-color" type="s">
       <default>'#ff0000'</default>
-      <summary>Manual color</summary>
+      <summary>Manual panel color</summary>
     </key>
-    
-    <key name="opacity" type="d">
+
+    <key name="panel-opacity" type="d">
       <default>0.60</default>
       <summary>Panel opacity</summary>
-    </key>    
+    </key>
+
+    <!-- Dash -->
+
+    <key name="auto-dash-color" type="b">
+      <default>true</default>
+      <summary>Auto dash color enabled</summary>
+    </key>
+
+    <key name="dash-color" type="s">
+      <default>'#ff0000'</default>
+      <summary>Manual dash color</summary>
+    </key>
+
+    <key name="dash-opacity" type="d">
+      <default>0.60</default>
+      <summary>Dash opacity</summary>
+    </key>
+
+    <!-- Background -->
+
+    <key name="auto-background-color" type="b">
+      <default>true</default>
+      <summary>Auto background color enabled</summary>
+    </key>
+
+    <key name="background-color" type="s">
+      <default>'#000000'</default>
+      <summary>Manual background color</summary>
+    </key>
 
   </schema>
 

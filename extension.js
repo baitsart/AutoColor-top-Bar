@@ -17,6 +17,7 @@
  */
 import { Extension } from "resource:///org/gnome/shell/extensions/extension.js";
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
+import * as Overview from "resource:///org/gnome/shell/ui/overview.js";
 import St from "gi://St";
 import GLib from "gi://GLib";
 import Gio from "gi://Gio";
@@ -28,10 +29,14 @@ export default class AutoColorTopBarExtension extends Extension {
 
     console.debug("AUTOCOLOR ENABLE");
 
+    this._idleIds = [];
+
     // aplicar color inicial desde settings
-    GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+
+    this._queueIdle(() => {
       this._applyColor();
-      return GLib.SOURCE_REMOVE;
+      this._applyDashColor();
+      this._applyBackgroundColor();
     });
 
     // escuchar cambios en tiempo real (prefs.js)
@@ -39,20 +44,26 @@ export default class AutoColorTopBarExtension extends Extension {
       schema_id: "org.gnome.desktop.background",
     });
 
+    this._resumeId = Main.layoutManager.connect("monitors-changed", () => {
+      this._queueIdle(() => {
+        this._applyColor();
+      });
+    });
+
     this._settings.connectObject(
-      "changed::color",
+      "changed::panel-color",
       () => this._applyColor(),
       this,
     );
 
     this._settings.connectObject(
-      "changed::auto-color",
+      "changed::auto-panel-color",
       () => this._applyColor(),
       this,
     );
 
     this._settings.connectObject(
-      "changed::opacity",
+      "changed::panel-opacity",
       () => this._applyColor(),
       this,
     );
@@ -60,41 +71,79 @@ export default class AutoColorTopBarExtension extends Extension {
     this._backgroundSettings.connectObject(
       "changed",
       () => {
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-          if (this._settings.get_boolean("auto-color")) this._applyColor();
-          return GLib.SOURCE_REMOVE;
+        this._queueIdle(() => {
+          if (this._settings.get_boolean("auto-panel-color"))
+            this._applyColor();
+
+          if (this._settings.get_boolean("auto-dash-color"))
+            this._applyDashColor();
+
+          if (this._settings.get_boolean("auto-background-color"))
+            this._applyBackgroundColor();
         });
       },
       this,
     );
 
-<<<<<<< HEAD
-    this._resumeId = global.display.connect("monitors-changed", () => {
-=======
-    this._resumeId = Main.layoutManager.connect("monitors-changed", () => {
->>>>>>> 6750c7a (Fix monitor refresh signal for GNOME 50)
-      GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-        if (this._settings.get_boolean("auto-color")) this._applyColor();
-        return GLib.SOURCE_REMOVE;
-      });
-    });
+    this._settings.connectObject(
+      "changed::dash-color",
+      () => this._applyDashColor(),
+      this,
+    );
+
+    this._settings.connectObject(
+      "changed::auto-dash-color",
+      () => this._applyDashColor(),
+      this,
+    );
+
+    this._settings.connectObject(
+      "changed::dash-opacity",
+      () => this._applyDashColor(),
+      this,
+    );
+
+    this._settings.connectObject(
+      "changed::background-color",
+      () => this._applyBackgroundColor(),
+      this,
+    );
+
+    this._settings.connectObject(
+      "changed::auto-background-color",
+      () => this._applyBackgroundColor(),
+      this,
+    );
+    this._applyDashColor();
+    this._applyBackgroundColor();
   }
 
   disable() {
     this._settings?.disconnectObject(this);
     this._backgroundSettings?.disconnectObject(this);
 
-<<<<<<< HEAD
-    if (this._resumeId) global.display.disconnect(this._resumeId);
-=======
-    if (this._resumeId)
-        Main.layoutManager.disconnect(this._resumeId);
->>>>>>> 6750c7a (Fix monitor refresh signal for GNOME 50)
+    if (this._resumeId) Main.layoutManager.disconnect(this._resumeId);
+
+    for (const id of this._idleIds) GLib.Source.remove(id);
+
+    this._idleIds = [];
 
     this._settings = null;
     this._backgroundSettings = null;
 
     Main.panel.set_style("");
+  }
+
+  _queueIdle(callback) {
+    const id = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+      this._idleIds = this._idleIds.filter((x) => x !== id);
+
+      callback();
+
+      return GLib.SOURCE_REMOVE;
+    });
+
+    this._idleIds.push(id);
   }
 
   _getAutoColor() {
@@ -142,11 +191,11 @@ export default class AutoColorTopBarExtension extends Extension {
   }
 
   _applyColor() {
-    let auto = this._settings.get_boolean("auto-color");
+    let auto = this._settings.get_boolean("auto-panel-color");
 
     let color;
 
-    const opacity = this._settings.get_double("opacity");
+    const opacity = this._settings.get_double("panel-opacity");
 
     if (auto) {
       try {
@@ -158,7 +207,7 @@ export default class AutoColorTopBarExtension extends Extension {
       }
     } else {
       // Modo Manual: usar el color del selector
-      color = this._settings.get_string("color");
+      color = this._settings.get_string("panel-color");
     }
 
     if (!color) return;
@@ -174,5 +223,65 @@ export default class AutoColorTopBarExtension extends Extension {
     Main.panel.set_style(
       `background-color: rgba(${r}, ${g}, ${b}, ${opacity});`,
     );
+  }
+
+  _applyDashColor() {
+    const auto = this._settings.get_boolean("auto-dash-color");
+    const opacity = this._settings.get_double("dash-opacity");
+
+    let color;
+
+    if (auto) {
+      try {
+        color = this._getAutoColor();
+      } catch (e) {
+        color = "#000000";
+      }
+    } else {
+      color = this._settings.get_string("dash-color");
+    }
+
+    if (!color) return;
+
+    color = String(color).replace(/['"]/g, "");
+
+    const dashSettings = new Gio.Settings({
+      schema_id: "org.gnome.shell.extensions.dash-to-dock",
+    });
+
+    dashSettings.set_boolean("custom-background-color", true);
+    dashSettings.set_string("background-color", color);
+    dashSettings.set_double("background-opacity", opacity);
+  }
+
+  _applyBackgroundColor() {
+    const auto = this._settings.get_boolean("auto-background-color");
+
+    let color;
+
+    if (auto) {
+      try {
+        color = this._getAutoColor();
+      } catch (e) {
+        color = "#000000";
+      }
+    } else {
+      color = this._settings.get_string("background-color");
+    }
+
+    if (!color) return;
+
+    color = String(color).replace(/['"]/g, "");
+
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+
+    const bgSettings = new Gio.Settings({
+      schema_id: "org.gnome.desktop.background",
+    });
+
+    bgSettings.set_string("primary-color", color);
+    bgSettings.set_string("color-shading-type", "solid");
   }
 }
