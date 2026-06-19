@@ -17,8 +17,6 @@
  */
 import { Extension } from "resource:///org/gnome/shell/extensions/extension.js";
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
-import * as Overview from "resource:///org/gnome/shell/ui/overview.js";
-import St from "gi://St";
 import GLib from "gi://GLib";
 import Gio from "gi://Gio";
 import GdkPixbuf from "gi://GdkPixbuf";
@@ -45,11 +43,6 @@ export default class AutoColorTopBarExtension extends Extension {
       this._applyColor();
       this._applyDashColor();
       this._applyBackgroundColor();
-    });
-
-    // escuchar cambios en tiempo real (prefs.js)
-    this._backgroundSettings = new Gio.Settings({
-      schema_id: "org.gnome.desktop.background",
     });
 
     this._resumeId = Main.layoutManager.connect("monitors-changed", () => {
@@ -138,6 +131,8 @@ export default class AutoColorTopBarExtension extends Extension {
 
     this._settings = null;
     this._backgroundSettings = null;
+    this._interfaceSettings = null;
+    this._resumeId = null;
 
     Main.panel.set_style("");
   }
@@ -156,30 +151,30 @@ export default class AutoColorTopBarExtension extends Extension {
 
   _getAutoColor() {
     const mode = this._interfaceSettings.get_string("color-scheme");
-  
+
     const key = mode.includes("prefer-dark")
       ? "picture-uri-dark"
       : "picture-uri";
-  
+
     const uri = this._backgroundSettings.get_string(key);
-  
+
     if (!uri) throw new Error("No wallpaper URI");
-  
+
     const file = Gio.File.new_for_uri(uri);
     const path = file.get_path();
-  
+
     if (!path) {
       throw new Error("Wallpaper is not a local file URI");
     }
-  
-    const pixbuf = GdkPixbuf.Pixbuf.new_from_file(path);
-  
+
+    const pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(path, 1, 1, true);
+
     const pixels = pixbuf.get_pixels();
-  
+
     const r = pixels[0];
     const g = pixels[1];
     const b = pixels[2];
-  
+
     return `#${r.toString(16).padStart(2, "0")}${g
       .toString(16)
       .padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
@@ -267,10 +262,6 @@ export default class AutoColorTopBarExtension extends Extension {
     if (!color) return;
 
     color = String(color).replace(/['"]/g, "");
-
-    const r = parseInt(color.slice(1, 3), 16);
-    const g = parseInt(color.slice(3, 5), 16);
-    const b = parseInt(color.slice(5, 7), 16);
 
     this._backgroundSettings.set_string("primary-color", color);
     this._backgroundSettings.set_string("color-shading-type", "solid");
