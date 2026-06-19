@@ -31,6 +31,14 @@ export default class AutoColorTopBarExtension extends Extension {
 
     this._idleIds = [];
 
+    this._interfaceSettings = new Gio.Settings({
+      schema_id: "org.gnome.desktop.interface",
+    });
+
+    this._backgroundSettings = new Gio.Settings({
+      schema_id: "org.gnome.desktop.background",
+    });
+
     // aplicar color inicial desde settings
 
     this._queueIdle(() => {
@@ -147,47 +155,34 @@ export default class AutoColorTopBarExtension extends Extension {
   }
 
   _getAutoColor() {
-    const interfaceSettings = new Gio.Settings({
-      schema_id: "org.gnome.desktop.interface",
-    });
-
-    const mode = interfaceSettings.get_string("color-scheme");
-
+    const mode = this._interfaceSettings.get_string("color-scheme");
+  
     const key = mode.includes("prefer-dark")
       ? "picture-uri-dark"
       : "picture-uri";
-
+  
     const uri = this._backgroundSettings.get_string(key);
-
-    console.debug(`AUTOCOLOR URI=${uri}`);
-
+  
+    if (!uri) throw new Error("No wallpaper URI");
+  
     const file = Gio.File.new_for_uri(uri);
-
-    console.debug(`AUTOCOLOR PATH=${file.get_path()}`);
-
-    const pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-      file.get_path(),
-      1,
-      1,
-      true,
-    );
-
+    const path = file.get_path();
+  
+    if (!path) {
+      throw new Error("Wallpaper is not a local file URI");
+    }
+  
+    const pixbuf = GdkPixbuf.Pixbuf.new_from_file(path);
+  
     const pixels = pixbuf.get_pixels();
-
+  
     const r = pixels[0];
     const g = pixels[1];
     const b = pixels[2];
-
-    console.debug(`AUTOCOLOR RGB=${r},${g},${b}`);
-
-    const hex =
-      `#${r.toString(16).padStart(2, "0")}` +
-      `${g.toString(16).padStart(2, "0")}` +
-      `${b.toString(16).padStart(2, "0")}`;
-
-    console.debug(`AUTOCOLOR HEX=${hex}`);
-
-    return hex;
+  
+    return `#${r.toString(16).padStart(2, "0")}${g
+      .toString(16)
+      .padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
   }
 
   _applyColor() {
@@ -277,11 +272,7 @@ export default class AutoColorTopBarExtension extends Extension {
     const g = parseInt(color.slice(3, 5), 16);
     const b = parseInt(color.slice(5, 7), 16);
 
-    const bgSettings = new Gio.Settings({
-      schema_id: "org.gnome.desktop.background",
-    });
-
-    bgSettings.set_string("primary-color", color);
-    bgSettings.set_string("color-shading-type", "solid");
+    this._backgroundSettings.set_string("primary-color", color);
+    this._backgroundSettings.set_string("color-shading-type", "solid");
   }
 }

@@ -38,3 +38,7 @@ Installation:
    gnome-extensions enable AutoColor-top-Bar@baitsart.github.com
 
 3. Log out and log back in (or restart GNOME Shell) if the extension does not appear immediately.
+
+
+Recomended: Enhance your desktop customization experience with Wallpaper Manager:
+https://www.gnome-look.org/p/1007698/
