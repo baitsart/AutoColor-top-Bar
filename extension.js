@@ -115,6 +115,11 @@ export default class AutoColorTopBarExtension extends Extension {
       () => this._applyBackgroundColor(),
       this,
     );
+
+    this._dashSettings = new Gio.Settings({
+      schema_id: "org.gnome.shell.extensions.dash-to-dock",
+    });
+
     this._applyDashColor();
     this._applyBackgroundColor();
   }
@@ -235,13 +240,9 @@ export default class AutoColorTopBarExtension extends Extension {
 
     color = String(color).replace(/['"]/g, "");
 
-    const dashSettings = new Gio.Settings({
-      schema_id: "org.gnome.shell.extensions.dash-to-dock",
-    });
-
-    dashSettings.set_boolean("custom-background-color", true);
-    dashSettings.set_string("background-color", color);
-    dashSettings.set_double("background-opacity", opacity);
+    this._dashSettings.set_boolean("custom-background-color", true);
+    this._dashSettings.set_string("background-color", color);
+    this._dashSettings.set_double("background-opacity", opacity);
   }
 
   _applyBackgroundColor() {
