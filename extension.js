@@ -127,17 +127,22 @@ export default class AutoColorTopBarExtension extends Extension {
   disable() {
     this._settings?.disconnectObject(this);
     this._backgroundSettings?.disconnectObject(this);
+    this._dashSettings?.disconnectObject(this);
 
-    if (this._resumeId) Main.layoutManager.disconnect(this._resumeId);
+    if (this._resumeId) {
+      Main.layoutManager.disconnect(this._resumeId);
+      this._resumeId = null;
+    }
 
-    for (const id of this._idleIds) GLib.Source.remove(id);
-
+    for (const id of this._idleIds) {
+      GLib.Source.remove(id);
+    }
     this._idleIds = [];
 
     this._settings = null;
     this._backgroundSettings = null;
     this._interfaceSettings = null;
-    this._resumeId = null;
+    this._dashSettings = null;
 
     Main.panel.set_style("");
   }
@@ -240,9 +245,17 @@ export default class AutoColorTopBarExtension extends Extension {
 
     color = String(color).replace(/['"]/g, "");
 
-    this._dashSettings.set_boolean("custom-background-color", true);
-    this._dashSettings.set_string("background-color", color);
-    this._dashSettings.set_double("background-opacity", opacity);
+    if (!this._dashSettings.get_boolean("custom-background-color")) {
+      this._dashSettings.set_boolean("custom-background-color", true);
+    }
+
+    if (this._dashSettings.get_string("background-color") !== color) {
+      this._dashSettings.set_string("background-color", color);
+    }
+
+    if (this._dashSettings.get_double("background-opacity") !== opacity) {
+      this._dashSettings.set_double("background-opacity", opacity);
+    }
   }
 
   _applyBackgroundColor() {
@@ -264,7 +277,12 @@ export default class AutoColorTopBarExtension extends Extension {
 
     color = String(color).replace(/['"]/g, "");
 
-    this._backgroundSettings.set_string("primary-color", color);
-    this._backgroundSettings.set_string("color-shading-type", "solid");
+    if (this._backgroundSettings.get_string("primary-color") !== color) {
+      this._backgroundSettings.set_string("primary-color", color);
+    }
+
+    if (this._backgroundSettings.get_string("color-shading-type") !== "solid") {
+      this._backgroundSettings.set_string("color-shading-type", "solid");
+    }
   }
 }
