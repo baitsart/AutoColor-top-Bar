@@ -116,9 +116,7 @@ export default class AutoColorTopBarExtension extends Extension {
       this,
     );
 
-    this._dashSettings = new Gio.Settings({
-      schema_id: "org.gnome.shell.extensions.dash-to-dock",
-    });
+    this._dashSettings = this._getDashToDockSettings();
 
     this._applyDashColor();
     this._applyBackgroundColor();
@@ -190,6 +188,17 @@ export default class AutoColorTopBarExtension extends Extension {
       .padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
   }
 
+  _getDashToDockSettings() {
+    const schemaId = "org.gnome.shell.extensions.dash-to-dock";
+    const schemaSource = Gio.SettingsSchemaSource.get_default();
+
+    if (schemaSource && schemaSource.lookup(schemaId, true)) {
+      return new Gio.Settings({ schema_id: schemaId });
+    }
+
+    return null;
+  }
+
   _applyColor() {
     let auto = this._settings.get_boolean("auto-panel-color");
 
@@ -226,6 +235,8 @@ export default class AutoColorTopBarExtension extends Extension {
   }
 
   _applyDashColor() {
+    if (!this._dashSettings) return;
+
     const auto = this._settings.get_boolean("auto-dash-color");
     const opacity = this._settings.get_double("dash-opacity");
 
@@ -245,17 +256,9 @@ export default class AutoColorTopBarExtension extends Extension {
 
     color = String(color).replace(/['"]/g, "");
 
-    if (!this._dashSettings.get_boolean("custom-background-color")) {
-      this._dashSettings.set_boolean("custom-background-color", true);
-    }
-
-    if (this._dashSettings.get_string("background-color") !== color) {
-      this._dashSettings.set_string("background-color", color);
-    }
-
-    if (this._dashSettings.get_double("background-opacity") !== opacity) {
-      this._dashSettings.set_double("background-opacity", opacity);
-    }
+    this._dashSettings.set_boolean("custom-background-color", true);
+    this._dashSettings.set_string("background-color", color);
+    this._dashSettings.set_double("background-opacity", opacity);
   }
 
   _applyBackgroundColor() {
